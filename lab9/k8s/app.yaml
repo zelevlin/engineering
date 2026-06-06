@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab9-app
+  namespace: engineering-lab9
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engineering-lab9-app
+  template:
+    metadata:
+      labels:
+        app: engineering-lab9-app
+    spec:
+      containers:
+        - name: app
+          image: engineering-lab9-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: DATA_DIR
+              value: /tmp/lab9-data
+            - name: CSV_CHUNK_SIZE
+              value: "25000"
+            - name: MAX_CONTENT_MB
+              value: "200"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
+          volumeMounts:
+            - name: data
+              mountPath: /tmp/lab9-data
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-lab9-app
+  namespace: engineering-lab9
+spec:
+  selector:
+    app: engineering-lab9-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
