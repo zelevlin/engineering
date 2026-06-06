@@ -13,6 +13,26 @@ const serviceList = [
   { name: 'orders', url: process.env.ORDERS_URL || 'http://localhost:4003/graphql' }
 ];
 
+async function waitForSubgraph({ name, url }) {
+  const healthUrl = url.replace(/\/graphql$/, '/healthz');
+  const maxAttempts = Number(process.env.SUBGRAPH_WAIT_ATTEMPTS || 30);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(healthUrl);
+      if (response.ok) return;
+    } catch {
+      // The service can exist before its HTTP listener is ready.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  throw new Error(`Subgraph "${name}" did not become ready at ${healthUrl}`);
+}
+
+await Promise.all(serviceList.map(waitForSubgraph));
+
 const gateway = new ApolloGateway({
   supergraphSdl: new IntrospectAndCompose({ subgraphs: serviceList })
 });
