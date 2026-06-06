@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab8-orders
+  namespace: engineering-lab8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engineering-lab8-orders
+  template:
+    metadata:
+      labels:
+        app: engineering-lab8-orders
+    spec:
+      containers:
+        - name: orders
+          image: engineering-lab8-orders:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4003
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 4003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 4003
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-lab8-orders
+  namespace: engineering-lab8
+spec:
+  selector:
+    app: engineering-lab8-orders
+  ports:
+    - name: http
+      port: 4003
+      targetPort: 4003
+  type: ClusterIP

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab8-products
+  namespace: engineering-lab8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engineering-lab8-products
+  template:
+    metadata:
+      labels:
+        app: engineering-lab8-products
+    spec:
+      containers:
+        - name: products
+          image: engineering-lab8-products:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4002
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 4002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 4002
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-lab8-products
+  namespace: engineering-lab8
+spec:
+  selector:
+    app: engineering-lab8-products
+  ports:
+    - name: http
+      port: 4002
+      targetPort: 4002
+  type: ClusterIP

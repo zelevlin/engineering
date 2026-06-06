@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab8-frontend
+  namespace: engineering-lab8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engineering-lab8-frontend
+  template:
+    metadata:
+      labels:
+        app: engineering-lab8-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: engineering-lab8-frontend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-lab8-frontend
+  namespace: engineering-lab8
+spec:
+  selector:
+    app: engineering-lab8-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP

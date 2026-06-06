@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab8-gateway
+  namespace: engineering-lab8
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: engineering-lab8-gateway
+  template:
+    metadata:
+      labels:
+        app: engineering-lab8-gateway
+    spec:
+      containers:
+        - name: gateway
+          image: engineering-lab8-gateway:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: USERS_URL
+              value: http://engineering-lab8-users:4001/graphql
+            - name: PRODUCTS_URL
+              value: http://engineering-lab8-products:4002/graphql
+            - name: ORDERS_URL
+              value: http://engineering-lab8-orders:4003/graphql
+          ports:
+            - containerPort: 4000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 4000
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 4000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 75m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: engineering-lab8-gateway
+  namespace: engineering-lab8
+spec:
+  selector:
+    app: engineering-lab8-gateway
+  ports:
+    - name: http
+      port: 4000
+      targetPort: 4000
+  type: ClusterIP
