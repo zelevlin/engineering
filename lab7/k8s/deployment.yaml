@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: engineering-lab7-app
+  namespace: engineering-lab7
+  labels:
+    app.kubernetes.io/name: engineering-lab7-app
+    app.kubernetes.io/part-of: engineering-lab7
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: engineering-lab7-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: engineering-lab7-app
+        app.kubernetes.io/part-of: engineering-lab7
+    spec:
+      containers:
+        - name: app
+          image: engineering-lab7-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
