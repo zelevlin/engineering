@@ -1,0 +1,67 @@
+defaultRules:
+  create: false
+
+grafana:
+  adminPassword: lab7-admin
+  defaultDashboardsEnabled: true
+  livenessProbe:
+    initialDelaySeconds: 180
+    timeoutSeconds: 5
+    failureThreshold: 10
+  readinessProbe:
+    initialDelaySeconds: 60
+    timeoutSeconds: 5
+    failureThreshold: 18
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 2h
+    scrapeInterval: 15s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+alertmanager:
+  enabled: false
+
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
