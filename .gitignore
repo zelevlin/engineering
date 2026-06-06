@@ -1,0 +1,58 @@
+.DS_Store
+Thumbs.db
+
+# Private local notes and assignment files
+/README.md
+lab*/Задание*.md
+lab*/JOURNAL.md
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and runtime files
+*.log
+logs/
+tmp/
+temp/
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+kubeconfig*
+*.kubeconfig
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+coverage/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Kubernetes and Helm local output
+*.tgz
+.terraform/
+terraform.tfstate*
+charts/**/charts/
+charts/**/tmpcharts/
+
+# Generated media
+*.mp4
+*.mov
+*.webm
