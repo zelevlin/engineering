@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: engineering-lab7-app
+  namespace: engineering-lab7
+  labels:
+    app.kubernetes.io/name: engineering-lab7-app
+    app.kubernetes.io/part-of: engineering-lab7
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: engineering.lab7.zelenkov-labs.ru
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: engineering-lab7-app
+                port:
+                  number: 80
