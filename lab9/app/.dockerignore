@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+tmp/
+temp/
+uploads/
+generated/
+*.csv
+
+.DS_Store
+*.log
