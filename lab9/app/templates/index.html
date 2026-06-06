@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lab 9 Big Data Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Information Systems Design, Lab 9</p>
+        <h1>Big Data Processing Dashboard</h1>
+      </div>
+      <a class="ghost-link" href="/api/results">API results</a>
+    </header>
+
+    <main class="layout">
+      <section class="panel controls">
+        <h2>Dataset</h2>
+        <form action="/upload" method="post" enctype="multipart/form-data" class="stack">
+          <label for="dataset">Upload CSV</label>
+          <input id="dataset" name="dataset" type="file" accept=".csv,text/csv" required>
+          <button type="submit">Upload</button>
+        </form>
+
+        <form action="/generate" method="post" class="stack">
+          <label for="rows">Generate demo rows</label>
+          <input id="rows" name="rows" type="number" min="1000" max="1000000" step="1000" value="100000">
+          <button type="submit">Generate on server</button>
+          <a class="secondary-action" href="/download-demo?rows=100000">Download demo CSV</a>
+        </form>
+
+        {% if state.dataset %}
+          <div class="actions">
+            <form action="/analyze" method="post">
+              <button type="submit">Analyze</button>
+            </form>
+            <form action="/train" method="post">
+              <button type="submit">Train model</button>
+            </form>
+          </div>
+        {% endif %}
+      </section>
+
+      <section class="panel span-2">
+        <h2>Current File</h2>
+        {% if state.dataset %}
+          <div class="metrics">
+            <div><span>{{ state.dataset.rows }}</span><small>rows</small></div>
+            <div><span>{{ state.dataset.size_mb }}</span><small>MB</small></div>
+            <div><span>{{ state.dataset.columns|length }}</span><small>columns</small></div>
+          </div>
+          <p class="muted">{{ state.dataset.filename }}</p>
+          <div class="chips">
+            {% for column in state.dataset.columns %}
+              <span>{{ column }}</span>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="empty">Upload a CSV or generate a demo churn dataset.</p>
+        {% endif %}
+      </section>
+
+      {% if state.dataset %}
+        <section class="panel span-3">
+          <h2>Preview</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  {% for column in state.dataset.columns %}
+                    <th>{{ column }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in state.dataset.preview %}
+                  <tr>
+                    {% for column in state.dataset.columns %}
+                      <td>{{ row[column] }}</td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      {% endif %}
+
+      {% if state.analysis %}
+        <section class="panel span-3">
+          <h2>Chunked Summary Statistics</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Count</th>
+                  <th>Mean</th>
+                  <th>Min</th>
+                  <th>Max</th>
+                  <th>Std</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in state.analysis.summary %}
+                  <tr>
+                    <td>{{ row.column }}</td>
+                    <td>{{ row.count }}</td>
+                    <td>{{ row.mean }}</td>
+                    <td>{{ row.min }}</td>
+                    <td>{{ row.max }}</td>
+                    <td>{{ row.std }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel chart-panel">
+          <h2>Distribution</h2>
+          <canvas id="histogramChart"></canvas>
+        </section>
+        <section class="panel chart-panel span-2">
+          <h2>Correlation Sample</h2>
+          <canvas id="correlationChart"></canvas>
+        </section>
+      {% endif %}
+
+      {% if state.training %}
+        <section class="panel span-3">
+          <h2>Training Result</h2>
+          {% if state.training.error %}
+            <p class="empty">{{ state.training.error }}</p>
+          {% else %}
+            <div class="metrics">
+              <div><span>{{ state.training.accuracy }}</span><small>accuracy</small></div>
+              <div><span>{{ state.training.rows_used }}</span><small>rows used</small></div>
+              <div><span>{{ state.training.rows_seen }}</span><small>rows scanned</small></div>
+            </div>
+            <div class="model-grid">
+              <div>
+                <h3>Confusion Matrix</h3>
+                <table class="matrix">
+                  {% for row in state.training.confusion_matrix %}
+                    <tr>
+                      {% for value in row %}
+                        <td>{{ value }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </table>
+              </div>
+              <div>
+                <h3>Feature Weights</h3>
+                <div class="bars">
+                  {% for feature in state.training.features %}
+                    <div>
+                      <span>{{ feature.name }}</span>
+                      <strong>{{ feature.weight }}</strong>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </section>
+      {% endif %}
+    </main>
+
+    <script>
+      window.dashboardState = {{ state_json|safe }};
+    </script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+  </body>
+</html>
