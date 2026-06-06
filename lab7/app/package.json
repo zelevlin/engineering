@@ -1,0 +1,16 @@
+{
+  "name": "engineering-lab7-k8s-app",
+  "version": "1.0.0",
+  "description": "HTTP service for the Kubernetes lab",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.22.2"
+  }
+}
