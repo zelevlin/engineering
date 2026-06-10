@@ -90,12 +90,3 @@ curl http://engineering.lab9.zelenkov-labs.ru/
 kubectl -n engineering-lab7 get pods
 kubectl -n engineering-lab8 get pods
 ```
-
-## Video Demonstration Scenario
-
-1. Open `http://engineering.lab9.zelenkov-labs.ru`.
-2. Generate a demo dataset with 100000 or 200000 rows.
-3. Show dataset size, row count, detected columns, and preview.
-4. Run analysis and show chunked summary statistics plus charts.
-5. Train the model and show accuracy, confusion matrix, and feature weights.
-6. Open `/api/results` to show the API response.
