@@ -50,7 +50,12 @@ const typeDefs = gql`
 const resolvers = {
   User: {
     __resolveReference(reference) {
-      return users.get(reference.id) || null;
+      return users.get(reference.id) || {
+        id: reference.id,
+        name: `Unknown user ${reference.id}`,
+        email: 'unknown@example.com',
+        role: 'unknown'
+      };
     }
   },
   Query: {

@@ -51,7 +51,12 @@ const typeDefs = gql`
 const resolvers = {
   Product: {
     __resolveReference(reference) {
-      return products.get(reference.id) || null;
+      return products.get(reference.id) || {
+        id: reference.id,
+        name: `Unknown product ${reference.id}`,
+        price: 0,
+        stock: 0
+      };
     }
   },
   Query: {

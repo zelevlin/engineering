@@ -33,9 +33,10 @@ const DASHBOARD_QUERY = `
   }
 `;
 
-const emptyUser = { name: '', email: '', role: 'customer' };
-const emptyProduct = { name: '', price: '0', stock: '0' };
+const emptyUser = { name: '', email: '' };
+const emptyProduct = { name: '', price: '', stock: '' };
 const emptyOrder = { userId: '', productIds: '', status: 'new' };
+const orderStatuses = ['new', 'processing', 'completed', 'cancelled'];
 
 function App() {
   const [data, setData] = useState({ users: [], products: [], orders: [] });
@@ -84,7 +85,7 @@ function App() {
 
       <section className="crud-grid">
         <UsersPanel users={data.users} onChange={load} disabled={loading} />
-        <ProductsPanel products={data.products} onChange={load} disabled={loading} />
+        <ProductsPanel products={data.products} orders={data.orders} onChange={load} disabled={loading} />
         <OrdersPanel
           users={data.users}
           products={data.products}
@@ -110,10 +111,16 @@ function Metric({ label, value }) {
 function UsersPanel({ users, onChange, disabled }) {
   const [form, setForm] = useState(emptyUser);
   const [editingId, setEditingId] = useState('');
+  const [formError, setFormError] = useState('');
 
   const submit = async (event) => {
     event.preventDefault();
-    const input = { name: form.name, email: form.email, role: form.role };
+    setFormError('');
+    const input = { name: form.name.trim(), email: form.email.trim(), role: 'customer' };
+    if (!input.name || !input.email) {
+      setFormError('Name and email are required.');
+      return;
+    }
     if (editingId) {
       await graphQL(`mutation UpdateUser($id: ID!, $input: UpdateUserInput!) { updateUser(id: $id, input: $input) { id } }`, {
         id: editingId,
@@ -132,7 +139,7 @@ function UsersPanel({ users, onChange, disabled }) {
       <form className="entity-form" onSubmit={submit}>
         <input placeholder="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
         <input placeholder="Email" type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} required />
-        <input placeholder="Role" value={form.role} onChange={(event) => setForm({ ...form, role: event.target.value })} required />
+        {formError && <div className="form-error">{formError}</div>}
         <button disabled={disabled} type="submit">
           {editingId ? <Check size={16} /> : <Plus size={16} />}
           {editingId ? 'Save user' : 'Add user'}
@@ -144,14 +151,18 @@ function UsersPanel({ users, onChange, disabled }) {
           <>
             <strong>{user.name}</strong>
             <span>{user.email}</span>
-            <small>{user.role} · {user.orders.length} orders</small>
+            <small>{user.orders.length} orders</small>
           </>
         )}
         onEdit={(user) => {
           setEditingId(user.id);
-          setForm({ name: user.name, email: user.email, role: user.role });
+          setForm({ name: user.name, email: user.email });
         }}
         onDelete={async (user) => {
+          if (user.orders.length > 0) {
+            setFormError('Delete or reassign this user orders first.');
+            return;
+          }
           await graphQL(`mutation DeleteUser($id: ID!) { deleteUser(id: $id) }`, { id: user.id });
           await onChange();
         }}
@@ -160,13 +171,34 @@ function UsersPanel({ users, onChange, disabled }) {
   );
 }
 
-function ProductsPanel({ products, onChange, disabled }) {
+function ProductsPanel({ products, orders, onChange, disabled }) {
   const [form, setForm] = useState(emptyProduct);
   const [editingId, setEditingId] = useState('');
+  const [formError, setFormError] = useState('');
+  const usedProductIds = useMemo(() => {
+    return new Set(orders.flatMap((order) => order.productIds));
+  }, [orders]);
 
   const submit = async (event) => {
     event.preventDefault();
-    const input = { name: form.name, price: Number(form.price), stock: Number(form.stock) };
+    setFormError('');
+    const input = {
+      name: form.name.trim(),
+      price: Number(form.price),
+      stock: Number(form.stock)
+    };
+    if (!input.name) {
+      setFormError('Product name is required.');
+      return;
+    }
+    if (form.price === '' || Number.isNaN(input.price) || input.price < 0) {
+      setFormError('Price must be a non-negative number.');
+      return;
+    }
+    if (form.stock === '' || !Number.isInteger(input.stock) || input.stock < 0) {
+      setFormError('Stock must be a non-negative integer.');
+      return;
+    }
     if (editingId) {
       await graphQL(`mutation UpdateProduct($id: ID!, $input: UpdateProductInput!) { updateProduct(id: $id, input: $input) { id } }`, {
         id: editingId,
@@ -183,9 +215,10 @@ function ProductsPanel({ products, onChange, disabled }) {
   return (
     <Panel title="Products" icon={<Package size={18} />}>
       <form className="entity-form" onSubmit={submit}>
-        <input placeholder="Name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
-        <input placeholder="Price" type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required />
-        <input placeholder="Stock" type="number" min="0" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} required />
+        <input placeholder="Product name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
+        <input placeholder="Price, e.g. 199.99" type="number" min="0" step="0.01" value={form.price} onChange={(event) => setForm({ ...form, price: event.target.value })} required />
+        <input placeholder="Stock quantity, e.g. 7" type="number" min="0" step="1" value={form.stock} onChange={(event) => setForm({ ...form, stock: event.target.value })} required />
+        {formError && <div className="form-error">{formError}</div>}
         <button disabled={disabled} type="submit">
           {editingId ? <Check size={16} /> : <Plus size={16} />}
           {editingId ? 'Save product' : 'Add product'}
@@ -205,6 +238,10 @@ function ProductsPanel({ products, onChange, disabled }) {
           setForm({ name: product.name, price: String(product.price), stock: String(product.stock) });
         }}
         onDelete={async (product) => {
+          if (usedProductIds.has(product.id)) {
+            setFormError('Delete orders that use this product first.');
+            return;
+          }
           await graphQL(`mutation DeleteProduct($id: ID!) { deleteProduct(id: $id) }`, { id: product.id });
           await onChange();
         }}
@@ -216,6 +253,12 @@ function ProductsPanel({ products, onChange, disabled }) {
 function OrdersPanel({ users, products, orders, productNames, onChange, disabled }) {
   const [form, setForm] = useState(emptyOrder);
   const [editingId, setEditingId] = useState('');
+  const [formError, setFormError] = useState('');
+  const validProductIds = useMemo(() => new Set(products.map((product) => product.id)), [products]);
+  const selectedProductIds = useMemo(() => parseIds(form.productIds), [form.productIds]);
+  const selectedProductNames = useMemo(() => {
+    return selectedProductIds.map((id) => productNames.get(id) || id).join(', ');
+  }, [productNames, selectedProductIds]);
 
   useEffect(() => {
     if (!form.userId && users[0]) {
@@ -225,9 +268,28 @@ function OrdersPanel({ users, products, orders, productNames, onChange, disabled
 
   const submit = async (event) => {
     event.preventDefault();
+    setFormError('');
+    const productIds = parseIds(form.productIds);
+    if (!form.userId) {
+      setFormError('Select a user for the order.');
+      return;
+    }
+    if (!productIds.length) {
+      setFormError('Select at least one product.');
+      return;
+    }
+    if (!orderStatuses.includes(form.status)) {
+      setFormError('Select a valid order status.');
+      return;
+    }
+    const unknownIds = productIds.filter((id) => !validProductIds.has(id));
+    if (unknownIds.length) {
+      setFormError(`Unknown product IDs: ${unknownIds.join(', ')}`);
+      return;
+    }
     const input = {
       userId: form.userId,
-      productIds: form.productIds.split(',').map((id) => id.trim()).filter(Boolean),
+      productIds,
       status: form.status
     };
     if (editingId) {
@@ -249,11 +311,23 @@ function OrdersPanel({ users, products, orders, productNames, onChange, disabled
         <select value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })} required>
           {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
         </select>
-        <input placeholder="Product IDs, comma-separated" value={form.productIds} onChange={(event) => setForm({ ...form, productIds: event.target.value })} required />
-        <input placeholder="Status" value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} required />
+        <input placeholder="Selected products" value={selectedProductNames} readOnly required />
+        <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })} required>
+          {orderStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
         <div className="chips">
-          {products.map((product) => <button key={product.id} type="button" onClick={() => setForm({ ...form, productIds: appendId(form.productIds, product.id) })}>{product.id}</button>)}
+          {products.map((product) => (
+            <button
+              className={hasId(form.productIds, product.id) ? 'selected' : ''}
+              key={product.id}
+              type="button"
+              onClick={() => setForm({ ...form, productIds: toggleId(form.productIds, product.id) })}
+            >
+              {product.name}
+            </button>
+          ))}
         </div>
+        {formError && <div className="form-error">{formError}</div>}
         <button disabled={disabled || !users.length || !products.length} type="submit">
           {editingId ? <Check size={16} /> : <Plus size={16} />}
           {editingId ? 'Save order' : 'Add order'}
@@ -312,10 +386,23 @@ function EntityList({ items, render, onEdit, onDelete }) {
   );
 }
 
-function appendId(value, id) {
-  const ids = value.split(',').map((item) => item.trim()).filter(Boolean);
-  if (!ids.includes(id)) ids.push(id);
+function hasId(value, id) {
+  return parseIds(value).includes(id);
+}
+
+function toggleId(value, id) {
+  const ids = parseIds(value);
+  const index = ids.indexOf(id);
+  if (index >= 0) {
+    ids.splice(index, 1);
+  } else {
+    ids.push(id);
+  }
   return ids.join(', ');
+}
+
+function parseIds(value) {
+  return value.split(',').map((item) => item.trim()).filter(Boolean);
 }
 
 createRoot(document.getElementById('root')).render(<App />);
