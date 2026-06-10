@@ -166,10 +166,10 @@ helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
 kubectl -n monitoring get pods
 ```
 
-Open Grafana locally through port-forward:
+Grafana is exposed through the same lab7 ingress host under `/grafana`:
 
-```bash
-kubectl -n monitoring port-forward svc/prometheus-grafana 3001:80
+```text
+http://engineering.lab7.zelenkov-labs.ru/grafana
 ```
 
 Grafana credentials:
@@ -177,11 +177,7 @@ Grafana credentials:
 - login: `admin`
 - password: `lab7-admin`
 
-Open:
-
-```text
-http://127.0.0.1:3001
-```
+The Grafana service remains `ClusterIP`; only the ingress route is public.
 
 Use the built-in Kubernetes dashboards from kube-prometheus-stack. For the video demonstration, show CPU usage and pod count for namespace `engineering-lab7`.
 

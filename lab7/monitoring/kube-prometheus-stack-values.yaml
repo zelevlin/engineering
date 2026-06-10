@@ -4,6 +4,11 @@ defaultRules:
 grafana:
   adminPassword: lab7-admin
   defaultDashboardsEnabled: true
+  grafana.ini:
+    server:
+      domain: engineering.lab7.zelenkov-labs.ru
+      root_url: "%(protocol)s://%(domain)s/grafana/"
+      serve_from_sub_path: true
   livenessProbe:
     initialDelaySeconds: 180
     timeoutSeconds: 5
@@ -14,15 +19,20 @@ grafana:
     failureThreshold: 18
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
+      cpu: 100m
       memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
   service:
     type: ClusterIP
   ingress:
-    enabled: false
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - engineering.lab7.zelenkov-labs.ru
+    path: /grafana
+    pathType: Prefix
 
 prometheus:
   prometheusSpec:
