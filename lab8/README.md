@@ -203,18 +203,6 @@ kubectl get namespaces | grep engineering-lab
 kubectl -n engineering-lab7 get pods
 ```
 
-## Video Demonstration Script
-
-1. Show Kubernetes resources in namespace `engineering-lab8`.
-2. Open `http://engineering.lab8.zelenkov-labs.ru/`.
-3. Show seeded users, products, and orders.
-4. Create a new user.
-5. Create a new product.
-6. Create a new order using the new or seeded records.
-7. Update one product or order status.
-8. Delete one entity.
-9. Show a GraphQL query through `curl` or browser developer tools.
-
 ## Cleanup
 
 ```bash
